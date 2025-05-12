@@ -24,6 +24,7 @@ def update_etf_csv(top_n=300):
             if df.empty:
                 continue
             volume = df['Volume'].iloc[-1]
+            volume = volume.item() if hasattr(volume, 'item') else volume  # fix: ensure scalar
             etf_data.append((ticker, volume))
         except Exception as e:
             print(f"{ticker} 실패: {e}")

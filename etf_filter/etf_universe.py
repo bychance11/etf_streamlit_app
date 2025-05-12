@@ -18,20 +18,23 @@ ETF_CANDIDATES = [
 def update_etf_csv(top_n=300):
     etf_data = []
 
+
     for ticker in ETF_CANDIDATES:
         try:
-            df = yf.download(ticker, period='1d', progress=False)
-            if df.empty:
+            df = yf.download(ticker, period='5d', progress=False)
+            if df.empty or 'Volume' not in df.columns:
                 continue
-            volume = df['Volume'].iloc[-1]
-            volume = volume.item() if hasattr(volume, 'item') else volume  # fix: ensure scalar
+            volume_series = df['Volume'].dropna()
+            if volume_series.empty:
+                continue
+            volume = float(volume_series.iloc[-1])
             etf_data.append((ticker, volume))
         except Exception as e:
             print(f"{ticker} 실패: {e}")
             continue
 
-    sorted_etfs = sorted(etf_data, key=lambda x: x[1], reverse=True)
-    top_etfs = sorted_etfs[:top_n]
+    etf_data = [(t, v) for t, v in etf_data if isinstance(v, (int, float))]
+    top_etfs = sorted(etf_data, key=lambda x: x[1], reverse=True)[:top_n]
 
     df_out = pd.DataFrame(top_etfs, columns=['Ticker', 'Volume'])
     df_out.to_csv(ETF_CSV_PATH, index=False, encoding='cp949')

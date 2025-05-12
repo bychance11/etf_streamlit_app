@@ -15,11 +15,11 @@ def get_date_ranges(x, y):
 
 def run_filter_and_return(x, y):
     df_etf = pd.read_csv(ETF_CSV_PATH, encoding='cp949')
-    tickers = df_etf.iloc[1:, 1].dropna().unique().tolist()
+    tickers = df_etf['Ticker'].dropna().unique().tolist()
 
     y_start, x_start, end_date = get_date_ranges(x, y)
-
     results = []
+    logs = []
 
     for ticker in tickers:
         prior_price = get_price_on_date(ticker, y_start)
@@ -27,6 +27,7 @@ def run_filter_and_return(x, y):
         end_price = get_price_on_date(ticker, end_date)
 
         if not prior_price or not x_price or not end_price:
+            logs.append(f"{ticker}: 가격 데이터 없음 → 제외")
             continue
 
         prior_return = (x_price - prior_price) / prior_price * 100
@@ -38,5 +39,15 @@ def run_filter_and_return(x, y):
                 'Prior Return (%)': round(prior_return, 2),
                 'Recent Return (%)': round(recent_return, 2)
             })
+        else:
+            logs.append(f"{ticker}: prior={prior_return:.2f}%, recent={recent_return:.2f}% → 제외")
+
+    if logs:
+        print("\n[필터링 로그]")
+        for line in logs:
+            print(line)
+
+    print(f"\n총 대상 ETF 수: {len(tickers)}개")
+    print(f"하락 후 반등한 ETF 수: {len(results)}개")
 
     return pd.DataFrame(results)
